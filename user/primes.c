@@ -4,17 +4,16 @@
 
 void primes(int *fds)
 {
-    close(fds[1]);
     int p,q;
     if(read(fds[0],(char*)&p,sizeof(p))==sizeof(p))
     {
-        printf("primes %d\n", p);
+        printf("prime %d\n", p);
         int fds1[2];
         pipe(fds1);
         int pid=fork();
         if(pid!=0)
         {
-            while (read(fds1[1],(char*)&q,sizeof(q)))
+            while (read(fds[0],(char*)&q,sizeof(q)))
             {
                 /* code */
                 if (q%p!=0)
@@ -23,16 +22,20 @@ void primes(int *fds)
                 }
             }
             close(fds1[1]);
-            close(fds1[0]);
+            close(fds[0]);
             wait(0);
+            exit(0);
+
           
         }
         else{
-            primes(fds);
+            close(fds[0]);
+            close(fds1[1]);
+            primes(fds1);
+            exit(0);
         }
         
     }
-    exit(1);
 }
 
 
@@ -55,9 +58,12 @@ main(int argv,int argc[])
         }
         close(fds[1]);
         wait(0);
+        exit(0);
     }
     else{
+        close(fds[1]);
         primes(fds);
+        exit(0);
     }
-    exit(1);
+   
 }
