@@ -13,6 +13,7 @@
 
 #define MAXARGS 10
 
+int new_cmd=-1;
 struct cmd {
   int type;
 };
@@ -76,7 +77,8 @@ runcmd(struct cmd *cmd)
     if(ecmd->argv[0] == 0)
       exit(1);
     exec(ecmd->argv[0], ecmd->argv);
-    fprintf(2, "exec %s failed\n", ecmd->argv[0]);
+    fprintf(2, "exesc %s failed\n", ecmd->argv[0]);
+    fprintf(2, "$ ");
     break;
 
   case REDIR:
@@ -133,20 +135,25 @@ runcmd(struct cmd *cmd)
 int
 getcmd(char *buf, int nbuf)
 {
-  fprintf(2, "$ ");
+  if(new_cmd==1)
+  {
+    fprintf(2, "$ ");
+    new_cmd=-1;
+  }
   memset(buf, 0, nbuf);
   gets(buf, nbuf);
-  if(buf[0] == 0) // EOF
+  if(buf[0] == 0) // EsOF
+    {
     return -1;
+    }
   return 0;
 }
 
 int
-main(void)
+main(int argc, char **argv)
 {
   static char buf[100];
   int fd;
-
   // Ensure that three file descriptors are open.
   while((fd = open("console", O_RDWR)) >= 0){
     if(fd >= 3){
@@ -154,8 +161,10 @@ main(void)
       break;
     }
   }
-
+  new_cmd=argc;
+  //sleep(1);
   // Read and run input commands.
+  //printf("%d\n",new_cmd);
   while(getcmd(buf, sizeof(buf)) >= 0){
     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
       // Chdir must be called by the parent, not the child.
@@ -164,8 +173,10 @@ main(void)
         fprintf(2, "cannot cd %s\n", buf+3);
       continue;
     }
-    if(fork1() == 0)
+    if(fork1() == 0)//子进程执行命令
+    { 
       runcmd(parsecmd(buf));
+    }
     wait(0);
   }
   exit(0);
